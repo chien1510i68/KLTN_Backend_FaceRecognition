@@ -1,0 +1,25 @@
+server:
+  port: 8088
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/class_manager?user=root
+    #  url:jdbc:mysql://127.0.0.1:3306/student_manager?user=root
+    username: root
+    password: Chien2002
+    driver-class-name: com.mysql.jdbc.Driver
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+myconfig:
+  passwordHash: jwt-demo@6868
+jwt:
+  jwtSecret: jwt@6868
+  jwtExpirationMs: 30000000
+  jwtRefreshExpirationMs: 360000000
+
+
+
+
