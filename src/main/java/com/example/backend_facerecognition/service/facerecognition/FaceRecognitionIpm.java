@@ -16,6 +16,7 @@ import com.example.backend_facerecognition.model.QRCode;
 import com.example.backend_facerecognition.model.User;
 import com.example.backend_facerecognition.repository.*;
 import com.example.backend_facerecognition.service.chekins.CheckinsService;
+import com.example.backend_facerecognition.service.file.HandleImageIplm;
 import com.example.backend_facerecognition.service.mapper.FaceRecognitionSectionUpdateMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,10 +42,11 @@ public class FaceRecognitionIpm implements FaceRecognitionService {
     private final FaceRecogClient faceRecogClient;
     private final ModelMapper mapper;
     private final CheckinsRepository checkinsRepository;
+    private final HandleImageIplm handleImageIplm;
 
 
     @Override
-    public ResponseEntity<?> createFaceRecognition(CreateFaceRecognitionRequest request, MultipartFile image) {
+    public ResponseEntity<?> createFaceRecognition(CreateFaceRecognitionRequest request, MultipartFile image, MultipartFile signature) {
         Optional<QRCode> qrCode = qrCodeRepository.findById(request.getQrCodeId());
         Checkin checkin = new Checkin();
         if (qrCode.isEmpty()) {
@@ -69,27 +71,31 @@ public class FaceRecognitionIpm implements FaceRecognitionService {
             return createErrorResponse(Constants.ErrorMessageQRCode.QRCODE_NOT_ACTIVE);
         }
         double distance = calDistance(qrCode1.getLatitude(), qrCode1.getLongitude(), request.getLatitude(), request.getLongitude());
-        if (distance > 100) {
+        if (distance > 45) {
             return createErrorResponse(Constants.ErrorMessageFaceRecognition.OUTSIDE_OF_ALLOWABLE_RANGE);
         }
         try {
-            Integer resultPredict = (faceRecogClient.predictFace(image, request.getUserCode()));
-            if (resultPredict > 70 && !qrCode1.isNormal()) {
-                checkin = Checkin.builder().time(new Timestamp(new Date().getTime())).classroomId(qrCode1.getClassroomId()).id(UUID.randomUUID().toString())
-                        .note(null).userName(user.getFullName()).userCode(request.getUserCode()).dob(user.getDob())
-                        .qrCode(qrCode1).status("Yes").build();
-                checkinsRepository.save(checkin);
-            }
             if (qrCode1.isNormal()) {
                 checkin = Checkin.builder().time(new Timestamp(new Date().getTime())).classroomId(qrCode1.getClassroomId()).id(UUID.randomUUID().toString())
                         .note(null).userName(user.getFullName()).userCode(request.getUserCode()).dob(user.getDob())
                         .qrCode(qrCode1).status("Yes").build();
+                handleImageIplm.saveFile(signature.getBytes(), qrCode1.getClassroomId(), request.getUserCode());
                 checkinsRepository.save(checkin);
 
+            }else {
+                Integer resultPredict = (faceRecogClient.predictFace(image, request.getUserCode()));
+                if (resultPredict > 80) {
+                    checkin = Checkin.builder().time(new Timestamp(new Date().getTime())).classroomId(qrCode1.getClassroomId()).id(UUID.randomUUID().toString())
+                            .note(null).userName(user.getFullName()).userCode(request.getUserCode()).dob(user.getDob())
+                            .qrCode(qrCode1).status("Yes").build();
+                    checkinsRepository.save(checkin);
+                } else {
+                    return createErrorResponse("Không phát hiện ra khuôn mặt" + resultPredict);
+                }
+
+
             }
-            if (resultPredict < 70 && !qrCode1.isNormal()) {
-                return createErrorResponse("Không phát hiện ra khuôn mặt" + resultPredict);
-            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

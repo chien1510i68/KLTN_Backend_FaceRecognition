@@ -248,7 +248,7 @@ public class UserServiceImpl implements UserService {
         try {
             String json = "{\"user_code\" : \"" + userCode + "\" }";
 
-          Object responseObject = BaseServicePython.callData("http://localhost:8000/get_images/" ,json );
+          Object responseObject = BaseServicePython.callData("https://8d02-118-70-132-104.ngrok-free.app/get_images/" ,json );
             return ResponseEntity.ok(responseObject);
         } catch (Exception e) {
             e.printStackTrace();
@@ -260,7 +260,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> createImages(MultipartFile file) throws IOException {
-        String apiURL = "http://localhost:8000/detections/";
+        String apiURL = "https://8d02-118-70-132-104.ngrok-free.app/detections/";
         HttpClient httpClient = HttpClients.createDefault();
         HttpPost httpPost = new HttpPost(apiURL);
 
