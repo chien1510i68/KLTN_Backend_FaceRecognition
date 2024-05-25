@@ -16,4 +16,5 @@ public class CheckinDTO {
     private String status ;
     private String dob ;
     private String note ;
+    private Double distance ;
 }

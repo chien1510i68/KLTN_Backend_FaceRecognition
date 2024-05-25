@@ -19,4 +19,5 @@ public class CheckinUserDTO {
     private Timestamp timeCreateQr ;
 
     private boolean attended ;
+    private String signature ;
 }

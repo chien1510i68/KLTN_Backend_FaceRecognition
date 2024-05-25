@@ -2,6 +2,7 @@ package com.example.backend_facerecognition.service.chekins;
 
 import com.example.backend_facerecognition.constant.Constants;
 import com.example.backend_facerecognition.constant.ErrorCodeDefs;
+import com.example.backend_facerecognition.dto.entity.AttendedUserDTO;
 import com.example.backend_facerecognition.dto.entity.CheckinDTO;
 import com.example.backend_facerecognition.dto.entity.CheckinUserDTO;
 import com.example.backend_facerecognition.dto.request.checkins_request.CreateCheckinsRequest;
@@ -15,17 +16,16 @@ import com.example.backend_facerecognition.repository.CheckinsRepository;
 import com.example.backend_facerecognition.repository.ClassroomRepository;
 import com.example.backend_facerecognition.repository.QRCodeRepository;
 import com.example.backend_facerecognition.repository.UserRepository;
+import com.example.backend_facerecognition.service.file.HandleImageService;
 import com.example.backend_facerecognition.service.mapper.CheckinsUpdateMapper;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.annotations.Check;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +37,7 @@ public class CheckinsServiceImpl implements CheckinsService {
     private final CheckinsUpdateMapper checkinsUpdateMapper;
     private final ModelMapper mapper;
     private final UserRepository userRepository;
+    private final HandleImageService handleImageService ;
 
     @Override
     public ResponseEntity<?> createCheckins(CreateCheckinsRequest createCheckinsRequest) {
@@ -160,7 +161,7 @@ public class CheckinsServiceImpl implements CheckinsService {
     @Override
     public ResponseEntity<?> getAttendedByUser(String classroomId, String userCode) {
         Optional<Classroom> classroomOptional = classroomRepository.findById(classroomId);
-        if (classroomOptional.isEmpty()){
+        if (classroomOptional.isEmpty()) {
             BaseResponseError baseResponseError = new BaseResponseError();
             baseResponseError.setFailed(500, Constants.ErrorMessageClassroomValidation.CLASSROOM_NOT_FOUND);
             return ResponseEntity.ok(baseResponseError);
@@ -190,7 +191,70 @@ public class CheckinsServiceImpl implements CheckinsService {
         }).collect(Collectors.toList());
         BaseListResponse response = new BaseListResponse();
         response.setSuccess(true);
-        response.setResults(checkinUserDTOS , checkinUserDTOS.size());
+        response.setResults(checkinUserDTOS, checkinUserDTOS.size());
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    public ResponseEntity<?> getAllCheckInByClassroomId(String qrCodeId) {
+        Optional<QRCode> qrCodeOptional = qrCodeRepository.findById(qrCodeId);
+        if (qrCodeOptional.isEmpty()) {
+            BaseResponseError baseResponseError = new BaseResponseError();
+            baseResponseError.setSuccess(false);
+            baseResponseError.setFailed(500, Constants.ErrorMessageQRCode.QRCODE_NOT_FOUND);
+            return ResponseEntity.ok().body(baseResponseError);
+
+        }
+        String classroomId = qrCodeOptional.get().getClassroomId();
+        Optional<Classroom> classroom = classroomRepository.findById(classroomId);
+        if (classroom.isEmpty()) {
+            BaseResponseError baseResponseError = new BaseResponseError();
+            baseResponseError.setSuccess(false);
+            baseResponseError.setFailed(500, Constants.ErrorMessageClassroomValidation.CLASSROOM_NOT_FOUND);
+
+            return ResponseEntity.ok().body(baseResponseError);
+        }
+        List<User> users = classroom.get().getClassUsers().stream().map(ClassUser::getUser).collect(Collectors.toList());
+        List<QRCode> qrCodes = qrCodeRepository.findAllByClassroomId(classroomId);
+        if (qrCodes.size() == 0) {
+            BaseResponseError baseResponseError = new BaseResponseError();
+            baseResponseError.setSuccess(false);
+            baseResponseError.setFailed(500, Constants.ErrorMessageQRCode.QRCODE_NOT_FOUND);
+
+            return ResponseEntity.ok().body(baseResponseError);
+        }
+        List<AttendedUserDTO> attendedUserDTOS = new ArrayList<>();
+        for (User user : users) {
+            AttendedUserDTO userDTO = new AttendedUserDTO();
+
+            userDTO.setUserCode(user.getUserCode());
+            userDTO.setUserName(user.getFullName());
+            userDTO.setClassroom(user.getClassname());
+            userDTO.setDob(user.getDob());
+            List<CheckinUserDTO> checkinUserDTOS = qrCodes.stream().map(qrCode -> {
+                CheckinUserDTO checkinUserDTO = new CheckinUserDTO();
+                boolean attended = qrCode.getCheckins().stream().anyMatch(checkin -> {
+                    boolean isAttended = checkin.getUserCode().equals(user.getUserCode());
+                    checkinUserDTO.setAttended(isAttended);
+                    checkinUserDTO.setTimeAttended(isAttended ? checkin.getTime() : null);
+                    if(isAttended){
+                        checkinUserDTO.setSignature(handleImageService.getSignature(classroomId, checkin.getTime() , user.getUserCode()));
+                    }
+                    return isAttended;
+                });
+                checkinUserDTO.setTimeCreateQr(qrCode.getCreateAt());
+                return checkinUserDTO;
+            }).collect(Collectors.toList());
+            userDTO.setCheckinUserDTOS(checkinUserDTOS);
+            attendedUserDTOS.add(userDTO);
+        }
+
+        BaseItemResponse response = new BaseItemResponse();
+        response.setSuccess(true);
+        response.setData(attendedUserDTOS);
+        return ResponseEntity.ok().body(response);
+
+
+    }
+
 }

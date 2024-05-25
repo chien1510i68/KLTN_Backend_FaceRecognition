@@ -35,8 +35,8 @@ public class FaceRecogClient {
     private final ClassroomRepository classroomRepository;
     private final FaceRecognitionRepository faceRecognitionRepository ;
     public Integer predictFace(MultipartFile image_data ,String userCode) throws IOException {
-//        String apiURL = "http://localhost:8000/predict/";
-        String apiURL = "https://8d02-118-70-132-104.ngrok-free.app/predict/";
+        String apiURL = "http://localhost:8000/predict/";
+//        String apiURL = "http://localhost:";
         HttpClient httpClient = HttpClients.createDefault();
         HttpPost httpPost = new HttpPost(apiURL);
 

@@ -56,4 +56,9 @@ public class CheckinsController {
     public ResponseEntity<?> getHistoryCheckinsByUser(@RequestBody FilterUserAndClassroomRequest request){
         return checkinsService.getAttendedByUser(request.getClassroomId(), request.getUserCode());
     }
+    @GetMapping("attended_classroom/{qrCodeId}")
+    @PreAuthorize("hasAnyAuthority('STUDENT' , 'ADMIN')")
+    public ResponseEntity<?> getAttendedByClassroom (@PathVariable String qrCodeId){
+        return  checkinsService.getAllCheckInByClassroomId(qrCodeId);
+    }
 }

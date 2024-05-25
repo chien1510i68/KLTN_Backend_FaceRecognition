@@ -4,9 +4,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.FileNotFoundException;
+import java.sql.Timestamp;
+
 @Component
 public interface HandleImageService {
-    ResponseEntity<?> saveFile(byte[] imageData , String classroomId , String userCode) throws FileNotFoundException;
+    ResponseEntity<?> saveFile(byte[] imageData , String classroomId , String userCode, Timestamp timestamp) throws FileNotFoundException;
 
-    ResponseEntity<?> getSignature(String classroomId , String date , String userCode);
+    String getSignature(String classroomId , Timestamp timestamp , String userCode);
 }

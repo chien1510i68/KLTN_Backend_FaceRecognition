@@ -71,26 +71,42 @@ public class FaceRecognitionIpm implements FaceRecognitionService {
             return createErrorResponse(Constants.ErrorMessageQRCode.QRCODE_NOT_ACTIVE);
         }
         double distance = calDistance(qrCode1.getLatitude(), qrCode1.getLongitude(), request.getLatitude(), request.getLongitude());
-        if (distance > 45) {
-            return createErrorResponse(Constants.ErrorMessageFaceRecognition.OUTSIDE_OF_ALLOWABLE_RANGE);
+        if (distance > 100000) {
+            return createErrorResponse(Constants.ErrorMessageFaceRecognition.OUTSIDE_OF_ALLOWABLE_RANGE + distance);
         }
         try {
             if (qrCode1.isNormal()) {
-                checkin = Checkin.builder().time(new Timestamp(new Date().getTime())).classroomId(qrCode1.getClassroomId()).id(UUID.randomUUID().toString())
-                        .note(null).userName(user.getFullName()).userCode(request.getUserCode()).dob(user.getDob())
-                        .qrCode(qrCode1).status("Yes").build();
-                handleImageIplm.saveFile(signature.getBytes(), qrCode1.getClassroomId(), request.getUserCode());
+                checkin = Checkin.builder()
+                        .time(new Timestamp(new Date().getTime()))
+                        .classroomId(qrCode1.getClassroomId())
+                        .id(UUID.randomUUID().toString())
+                        .note(null).userName(user.getFullName())
+                        .userCode(request.getUserCode())
+                        .distance( distance)
+                        .dob(user.getDob())
+                        .qrCode(qrCode1).status("signature").build();
+                handleImageIplm.saveFile(signature.getBytes(), qrCode1.getClassroomId(), request.getUserCode(), new Timestamp(new Date().getTime()));
                 checkinsRepository.save(checkin);
 
-            }else {
+            } else {
                 Integer resultPredict = (faceRecogClient.predictFace(image, request.getUserCode()));
-                if (resultPredict > 80) {
-                    checkin = Checkin.builder().time(new Timestamp(new Date().getTime())).classroomId(qrCode1.getClassroomId()).id(UUID.randomUUID().toString())
+
+                if (resultPredict > 80 && resultPredict <= 100) {
+                    checkin = Checkin.builder()
+                            .time(new Timestamp(new Date().getTime()))
+                            .classroomId(qrCode1.getClassroomId())
+                            .id(UUID.randomUUID().toString())
+                            .distance(distance)
                             .note(null).userName(user.getFullName()).userCode(request.getUserCode()).dob(user.getDob())
-                            .qrCode(qrCode1).status("Yes").build();
+                            .qrCode(qrCode1).status("face").build();
                     checkinsRepository.save(checkin);
+                } else if (resultPredict == 500) {
+                    return createErrorResponse("Không thể tìm thấy model nhận dạng khuôn mặt " );
+                } else if (resultPredict == 502) {
+                    return createErrorResponse("Không phát hiện ra khuôn mặt" );
                 } else {
-                    return createErrorResponse("Không phát hiện ra khuôn mặt" + resultPredict);
+                    return createErrorResponse("Có lỗi khi tải mô hình nhận dạng" );
+
                 }
 
 
@@ -121,7 +137,7 @@ public class FaceRecognitionIpm implements FaceRecognitionService {
                 Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return c * R;
+        return c * R * 1000;
     }
 
 
@@ -140,6 +156,7 @@ public class FaceRecognitionIpm implements FaceRecognitionService {
                     .userName(faceRecognitionSection.get().getUser().getFullName())
                     .userCode(faceRecognitionSection.get().getUser().getUserCode())
                     .dob(faceRecognitionSection.get().getUser().getDob())
+//                    .distance()
                     .qrCode(faceRecognitionSection.get().getQrCode().getId()).build();
             return checkinsService.createCheckins(checkinsRequest);
         }

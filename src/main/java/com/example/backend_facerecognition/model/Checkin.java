@@ -39,6 +39,9 @@ public class Checkin {
     @Column
     private String note ;
 
+    @Column
+    private Double distance ;
+
 
     @ManyToOne
     @JoinColumn(name = "qr_id")
