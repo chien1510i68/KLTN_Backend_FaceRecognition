@@ -134,7 +134,7 @@ public class ClassroomServiceIplm implements ClassroomService {
     }
 
     @Override
-    public ResponseEntity<?> updateListStudent(MultipartFile file, String id) {
+    public ResponseEntity<?> addUserByFileExcel(MultipartFile file, String id) {
         Optional<Classroom> classroom = classroomRepository.findById(id);
         Role role = roleRepository.findById("STUDENT").orElseThrow();
         if (!classroom.isPresent()) {

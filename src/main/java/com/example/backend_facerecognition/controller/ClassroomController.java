@@ -69,8 +69,8 @@ public class ClassroomController {
 
     @PutMapping("{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN' )")
-    public ResponseEntity<?> updateClassroom(@RequestBody MultipartFile file, @PathVariable String id) {
-        return classroomService.updateListStudent(file, id);
+    public ResponseEntity<?> addUserByFileExcel(@RequestBody MultipartFile file, @PathVariable String id) {
+        return classroomService.addUserByFileExcel(file, id);
     }
     @PutMapping("update")
     @PreAuthorize("hasAnyAuthority('ADMIN' )")
