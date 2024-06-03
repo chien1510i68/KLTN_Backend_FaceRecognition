@@ -18,4 +18,5 @@ public interface CheckinsService {
 
     ResponseEntity<?> getAttendedByUser(String classroomId , String userCode );
     ResponseEntity<?> getAllCheckInByClassroomId(String qrCodeId);
+
 }

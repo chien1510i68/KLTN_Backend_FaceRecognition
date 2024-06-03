@@ -19,7 +19,6 @@ import com.example.backend_facerecognition.repository.UserRepository;
 import com.example.backend_facerecognition.service.file.HandleImageService;
 import com.example.backend_facerecognition.service.mapper.CheckinsUpdateMapper;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.annotations.Check;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -175,7 +174,7 @@ public class CheckinsServiceImpl implements CheckinsService {
         }
 
         List<QRCode> qrCodes = qrCodeRepository.findAllByClassroomId(classroomId);
-        List<CheckinUserDTO> checkinUserDTOS = qrCodes.stream().map(qrCode -> {
+        List<CheckinUserDTO> checkinUserDTOS = qrCodes.stream().sorted(Comparator.comparing(QRCode::getCreateAt)).map(qrCode -> {
             CheckinUserDTO checkinUserDTO = new CheckinUserDTO();
             boolean attended = qrCode.getCheckins().stream().anyMatch(checkin -> {
                 boolean isAttended = checkin.getUserCode().equals(userCode);
@@ -244,7 +243,7 @@ public class CheckinsServiceImpl implements CheckinsService {
                 });
                 checkinUserDTO.setTimeCreateQr(qrCode.getCreateAt());
                 return checkinUserDTO;
-            }).collect(Collectors.toList());
+            }).sorted(Comparator.comparing(CheckinUserDTO::getTimeCreateQr)).collect(Collectors.toList());
             userDTO.setCheckinUserDTOS(checkinUserDTOS);
             attendedUserDTOS.add(userDTO);
         }
@@ -256,5 +255,7 @@ public class CheckinsServiceImpl implements CheckinsService {
 
 
     }
+
+
 
 }

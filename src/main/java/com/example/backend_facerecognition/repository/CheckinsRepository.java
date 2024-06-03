@@ -14,4 +14,5 @@ public interface CheckinsRepository extends JpaRepository<Checkin , String > {
     Optional<Checkin> findByUserCodeAndQrCode(String userCode , QRCode qrCode);
     List<Checkin> findAllByUserCodeAndClassroomId(String userCode , String classroomId);
     Optional<Checkin> findByUserCode(String userCode);
+    List<Checkin> findAllByClassroomId(String classroomId);
 }
