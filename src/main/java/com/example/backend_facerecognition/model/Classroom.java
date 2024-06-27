@@ -1,5 +1,6 @@
 package com.example.backend_facerecognition.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -40,6 +41,8 @@ public class Classroom {
 
     @Column(name = "note")
     private String note ;
+    @Column(name = "createBy")
+    private
 
     @OneToMany(mappedBy = "classroom" , cascade = CascadeType.ALL)
     @JsonManagedReference
@@ -49,5 +52,11 @@ public class Classroom {
     @OneToMany(mappedBy = "classroom")
     @JsonManagedReference
     private List<FaceRecognitionSection> faceRecognitionSections;
+
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonBackReference
+    private User  user ;
 
 }

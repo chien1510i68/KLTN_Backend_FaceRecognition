@@ -49,6 +49,11 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
+    List<Classroom> classrooms = new ArrayList<>();
+
+
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<FaceRecognitionSection> recognitionSections ;
 
     public Collection<? extends GrantedAuthority> getAuthorities() {

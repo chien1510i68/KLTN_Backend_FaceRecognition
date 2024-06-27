@@ -19,48 +19,48 @@ public class QRCodeController {
 
 
     @GetMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> getQRCodeById(@PathVariable String id) {
         return qrCodeService.getQRCodeById(id);
     }
     @GetMapping("filter/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> getUsersNotAttended(@PathVariable String id){
         return qrCodeService.getUsersNotAttended(id);
     }
 
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN' , 'LECTURER')")
     public ResponseEntity<?> getAllQRCode() {
         return qrCodeService.getAllQRCode();
     }
 
     @PostMapping("filter")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN' , 'LECTURER')")
     public ResponseEntity<?> filterQrcode(@RequestBody FilterQRRequest request) throws ParseException {
         return qrCodeService.filterQrCode(request);
     }
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> createQRCode(@RequestBody CreateQRCodeRequest request) {
         return qrCodeService.createQRCode(request);
     }
 
     @PutMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> updateQRCode(@RequestBody UpdateQRCodeRequest request) {
         return qrCodeService.updateQRCode(request);
     }
 
     @DeleteMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> deleteQrCode(@PathVariable String id) {
         return qrCodeService.deleteQRCode(id);
     }
 
     @GetMapping("/quantity/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' ,'STUDENT')")
+    @PreAuthorize("hasAnyAuthority('ADMIN' ,'STUDENT', 'LECTURER')")
     public ResponseEntity<?> getQRCodesByClassroomId(@PathVariable String id){
         return qrCodeService.getQrCodeByClassroom(id);
     }

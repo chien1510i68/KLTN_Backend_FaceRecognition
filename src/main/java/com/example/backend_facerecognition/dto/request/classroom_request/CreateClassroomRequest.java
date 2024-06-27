@@ -15,5 +15,6 @@ public class CreateClassroomRequest {
     private String schoolYear ;
     private int semester ;
     private String note ;
+    private String userCode ;
 
 }

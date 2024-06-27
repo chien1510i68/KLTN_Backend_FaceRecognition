@@ -63,11 +63,6 @@ public class WebSecurityConfig {
                 .authorizeRequests(expressionInterceptUrlRegistry -> expressionInterceptUrlRegistry
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/client/**").permitAll()
-//                        .requestMatchers("/classroom/**").permitAll()
-//                        .requestMatchers("/face_recognition/**").permitAll()
-//                        .requestMatchers("/qr/**").permitAll()
-//                        .requestMatchers("/user/**").permitAll()
-//                        .requestMatchers("/checkins/**").permitAll()
                         .anyRequest().authenticated());
 
         http.authenticationProvider(authenticationProvider());

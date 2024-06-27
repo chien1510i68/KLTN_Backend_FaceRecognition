@@ -35,7 +35,7 @@ public class BaseResponseError {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class ErrorDetail {
+    public static class  ErrorDetail {
         private String id;
         private String message;
     }

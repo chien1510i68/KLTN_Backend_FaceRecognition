@@ -13,8 +13,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
     private final UserRepository userRepository;
-
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUserCode(username).orElseThrow(() -> new RuntimeException("Không tìm mã sinh viên !"));
@@ -27,3 +25,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .phone(user.getPhoneNumber()).build();
     }
 }
+
+
+
+
+
+
+

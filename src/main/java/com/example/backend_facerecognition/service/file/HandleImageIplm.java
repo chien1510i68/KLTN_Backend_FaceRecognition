@@ -25,13 +25,12 @@ public class HandleImageIplm  implements HandleImageService {
         String formattedTime = dateFormat.format(timestamp);
         String basePath = "src/main/resources/signature/";
 
-        // Tạo đường dẫn đầy đủ đến file
         String folderPath = basePath + classroomId + "/" + userCode + "/";
         String filePath = folderPath + formattedTime;
 
         File folder = new File(folderPath);
         if (!folder.exists()) {
-            folder.mkdirs();  // Tạo tất cả các thư mục cha nếu chưa tồn tại
+            folder.mkdirs();
         }
 
         File imageFile = new File(filePath);

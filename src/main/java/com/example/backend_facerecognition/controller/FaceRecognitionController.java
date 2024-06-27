@@ -19,7 +19,7 @@ import java.io.IOException;
 public class FaceRecognitionController {
     private final FaceRecognitionService faceRecognitionService ;
     private final HandleImageService handleImageService ;
-    @PreAuthorize("hasAnyAuthority('STUDENT','ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('STUDENT','ADMIN' , 'LECTURER')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createFaceRecognition (@RequestParam String  qrCodeId ,
                                                     @RequestParam Float longitude,
@@ -44,29 +44,29 @@ public class FaceRecognitionController {
 
 
     @PutMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> updateFaceRecognition(@RequestBody UpdateFaceRecognitionRequest request , @PathVariable String id  ){
         return faceRecognitionService.updateFaceRecognition(request , id );
     }
     @GetMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN' , 'LECTURER')")
     public ResponseEntity<?> getFaceRecognition(@PathVariable String id){
         return faceRecognitionService.getFaceRecognition(id) ;
     }
     @PostMapping("test")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> test(@RequestParam String qrCode ,
                                   @RequestParam String userCode){
         return faceRecognitionService.test(qrCode , userCode);
     }
     @GetMapping("qr/{qrId}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> getAllByQr(@PathVariable String qrId) {
         return faceRecognitionService.getFaceRecognitionByQRCodeId(qrId);
     }
 
     @DeleteMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER' )")
     public ResponseEntity<?> deleteById (@PathVariable String id){
         return faceRecognitionService.deleteFaceRecognition(id);
     }

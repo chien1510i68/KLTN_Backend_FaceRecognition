@@ -2,12 +2,12 @@ package com.example.backend_facerecognition;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-public class BackendFaceRecognitionApplication {
-
+public class BackendFaceRecognitionApplication extends SpringBootServletInitializer {
     public static void main(String[] args) {
         SpringApplication.run(BackendFaceRecognitionApplication.class, args);
     }

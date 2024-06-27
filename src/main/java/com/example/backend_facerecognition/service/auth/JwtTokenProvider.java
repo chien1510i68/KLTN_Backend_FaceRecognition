@@ -43,9 +43,6 @@ public class JwtTokenProvider {
     }
 
 
-
-
-
     public String generateTokenWithAuthorities(Authentication authentication) {
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
         final String authorities = authentication.getAuthorities().stream()
@@ -53,21 +50,12 @@ public class JwtTokenProvider {
                 .collect(Collectors.joining(","));
 
         return Jwts.builder()
-                .setSubject(userPrincipal.getUserCode())
                 .setExpiration(new Date(new Date().getTime() + jwtExpirationMs))
                 .setIssuedAt(new Date())
+                .setSubject(userPrincipal.getUserCode())
                 .claim(AUTHORITIES_KEY , authorities)
                 .signWith(SignatureAlgorithm.HS512 , jwtSecret).compact();
-//        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
-//        final String authorities = authentication.getAuthorities().stream()
-//                .map(GrantedAuthority::getAuthority)
-//                .collect(Collectors.joining(","));
-//        return Jwts.builder()
-//                .setSubject(userPrincipal.getUsername())
-//                .setExpiration(new Date(new Date().getTime() + jwtExpirationMs))
-//                .setIssuedAt(new Date())
-//                .claim(AUTHORITIES_KEY , authorities)
-//                .signWith(SignatureAlgorithm.HS512 , jwtSecret).compact();
+
     }
 
 

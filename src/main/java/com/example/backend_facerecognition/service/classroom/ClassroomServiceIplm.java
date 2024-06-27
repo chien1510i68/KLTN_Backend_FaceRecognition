@@ -49,6 +49,13 @@ public class ClassroomServiceIplm implements ClassroomService {
     @Override
 
     public ResponseEntity<?> createClassroom(CreateClassroomRequest request) {
+        Optional<User> user = userRepository.findByUserCode(request.getUserCode());
+        if (user.isEmpty()) {
+            BaseResponseError baseResponseError = new BaseResponseError();
+            baseResponseError.setSuccess(false);
+            baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_NOT_FOUND);
+            return ResponseEntity.ok(baseResponseError);
+        }
 
         boolean isExistSchoolAndSemester = classroomRepository.existsBySchoolYearAndSemesterAndClassCode(request.getSchoolYear(), request.getSemester(), request.getClassCode());
         if (isExistSchoolAndSemester) {
@@ -57,13 +64,45 @@ public class ClassroomServiceIplm implements ClassroomService {
             baseResponseError.setFailed(500, Constants.ErrorMessageClassroomValidation.SEMESTER_AND_SCHOOLYEAR_EXISTED);
             return ResponseEntity.ok(baseResponseError);
         }
-        Classroom classroom = Classroom.builder().id(UUID.randomUUID().toString()).classCode(request.getClassCode()).studyGroup(request.getStudyGroup())
-                .nameClass(request.getClassName())
-                .schoolYear(request.getSchoolYear())
-                .semester(request.getSemester())
-                .note(request.getNote())
-                .quantityStudents(0).build();
+        Classroom classroom = Classroom.builder().id(UUID.randomUUID().toString()).classCode(request.getClassCode()).studyGroup(request.getStudyGroup()).nameClass(request.getClassName()).schoolYear(request.getSchoolYear()).semester(request.getSemester()).note(request.getNote()).user(user.get()).quantityStudents(0).build();
         classroomRepository.save(classroom);
+
+        if (request.getFile() != null) {
+            Role role = roleRepository.findById("STUDENT").orElseThrow();
+            ReadDataFromExcel<User> readDataFromExcel = new ReadDataFromExcel<>(User.class, new UserRowMapper());
+            List<User> users = readDataFromExcel.readFromExcel(request.getFile());
+            List<User> userInDB = userRepository.findAll();
+            List<User> usersNotInDB = users.stream().filter(user1 -> userInDB.stream().noneMatch(u -> u.getUserCode() != null && u.getUserCode().equals(user1.getUserCode()))).collect(Collectors.toList());
+            if (usersNotInDB.size() > 0) {
+                List<User> saveUserInDB = usersNotInDB.stream().map(item -> {
+                    item.setRole(role);
+                    item.setPassword(passwordEncoder.encode("123456"));
+                    item.setId(UUID.randomUUID().toString());
+                    return item;
+                }).collect(Collectors.toList());
+                userRepository.saveAll(saveUserInDB);
+                List<ClassUser> classUsers = saveUserInDB.stream().map(user1 -> {
+                    return ClassUser.builder().id(UUID.randomUUID().toString()).user(user1).classroom(classroom).build();
+                }).collect(Collectors.toList());
+                classUserRepository.saveAll(classUsers);
+                classroom.setQuantityStudents(classUsers.size());
+                classroomRepository.save(classroom);
+
+            } else {
+                List<ClassUser> classUsers = users.stream().map(user1 -> {
+                    User optionalUser = userRepository.findByUserCode(user1.getUserCode()).orElseThrow();
+                    Optional<ClassUser> classUser = classUserRepository.findByUserAndClassroom(optionalUser, classroom);
+                    if (!classUser.isPresent()) {
+                        return ClassUser.builder().id(UUID.randomUUID().toString()).user(optionalUser).classroom(classroom).build();
+                    }
+                    return null;
+                }).filter(Objects::nonNull).collect(Collectors.toList());
+                classUserRepository.saveAll(classUsers);
+                classroom.setQuantityStudents(classUsers.size());
+                classroomRepository.save(classroom);
+
+            }
+        }
 
         BaseItemResponse response = new BaseItemResponse();
         response.setSuccess(true);
@@ -84,7 +123,7 @@ public class ClassroomServiceIplm implements ClassroomService {
 
         classroomUpdateMapper.updateClassroom(request, classroom.get());
 
-        if(request.getNote()!= null){
+        if (request.getNote() != null) {
             classroom.get().setNote(request.getNote());
         }
 
@@ -143,16 +182,11 @@ public class ClassroomServiceIplm implements ClassroomService {
             ReadDataFromExcel<User> readDataFromExcel = new ReadDataFromExcel<>(User.class, new UserRowMapper());
             List<User> users = readDataFromExcel.readFromExcel(file);
             List<User> userInDB = userRepository.findAll();
-//            List<User> usersInClassroom = classroom.get().getClassUsers().stream()
-//                    .map(ClassUser::getUser)
-//                    .filter(Objects::nonNull)
-//                    .collect(Collectors.toList());
-            List<User> usersNotInDB = users.stream().
-                    filter(user -> userInDB.stream().noneMatch(u -> u.getUserCode().equals(user.getUserCode()))).collect(Collectors.toList());
+            List<User> usersNotInDB = users.stream().filter(user -> userInDB.stream().noneMatch(u -> u.getUserCode() != null && u.getUserCode().equals(user.getUserCode()))).collect(Collectors.toList());
             if (usersNotInDB.size() > 0) {
                 List<User> saveUserInDB = usersNotInDB.stream().map(item -> {
                     item.setRole(role);
-                    item.setPassword(passwordEncoder.encode("1111"));
+                    item.setPassword(passwordEncoder.encode("123456"));
                     item.setId(UUID.randomUUID().toString());
                     return item;
                 }).collect(Collectors.toList());
@@ -170,14 +204,13 @@ public class ClassroomServiceIplm implements ClassroomService {
                 return ResponseEntity.ok(baseListResponse);
             } else {
                 List<ClassUser> classUsers = users.stream().map(user -> {
-                            User optionalUser = userRepository.findByUserCode(user.getUserCode()).orElseThrow();
-                            Optional<ClassUser> classUser = classUserRepository.findByUserAndClassroom(optionalUser, classroom.get());
-                            if (!classUser.isPresent()) {
-                                return ClassUser.builder().id(UUID.randomUUID().toString()).user(optionalUser).classroom(classroom.get()).build();
-                            }
-                            return null;
-                        })
-                        .filter(Objects::nonNull).collect(Collectors.toList());
+                    User optionalUser = userRepository.findByUserCode(user.getUserCode()).orElseThrow();
+                    Optional<ClassUser> classUser = classUserRepository.findByUserAndClassroom(optionalUser, classroom.get());
+                    if (!classUser.isPresent()) {
+                        return ClassUser.builder().id(UUID.randomUUID().toString()).user(optionalUser).classroom(classroom.get()).build();
+                    }
+                    return null;
+                }).filter(Objects::nonNull).collect(Collectors.toList());
                 classUserRepository.saveAll(classUsers);
                 classroom.get().setQuantityStudents(classUsers.size());
                 classroomRepository.save(classroom.get());
@@ -203,6 +236,34 @@ public class ClassroomServiceIplm implements ClassroomService {
     }
 
     @Override
+    public ResponseEntity<?> getClassroomsByUserCode(String userCode) {
+        Optional<User> user = userRepository.findByUserCode(userCode);
+
+        if (user.isEmpty()) {
+            BaseResponseError baseResponseError = new BaseResponseError();
+            baseResponseError.setSuccess(false);
+            baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_NOT_FOUND);
+            return ResponseEntity.ok(baseResponseError);
+        }
+        if (user.get().getRole().getName().equals("ADMIN")) {
+            List<ClassroomDTO> classroomDTOS = classroomRepository.findAll().stream().map(classroom -> mapper.map(classroom, ClassroomDTO.class)).collect(Collectors.toList());
+
+
+            BaseListResponse baseListResponse = new BaseListResponse();
+            baseListResponse.setSuccess(true);
+            baseListResponse.setResults(classroomDTOS, classroomDTOS.size());
+            return ResponseEntity.ok(baseListResponse);
+        }
+        List<ClassroomDTO> classroomDTOS = user.get().getClassrooms().stream().map(classroom -> mapper.map(classroom, ClassroomDTO.class)).collect(Collectors.toList());
+
+
+        BaseListResponse baseListResponse = new BaseListResponse();
+        baseListResponse.setSuccess(true);
+        baseListResponse.setResults(classroomDTOS, classroomDTOS.size());
+        return ResponseEntity.ok(baseListResponse);
+    }
+
+    @Override
     public ResponseEntity<?> filterClassroom(FilterClassroomRequest request) {
         Specification<Classroom> specification = CustomClassroomRepository.filterClassRoom(request);
         List<ClassroomDTO> classroomDTOS = classroomRepository.findAll(specification).stream().map(item -> mapper.map(item, ClassroomDTO.class)).collect(Collectors.toList());
@@ -213,11 +274,7 @@ public class ClassroomServiceIplm implements ClassroomService {
     public ResponseEntity<?> getStudentInClassroom(String classroomId) {
         Optional<Classroom> classroom = classroomRepository.findById(classroomId);
         if (classroom.isPresent()) {
-            List<UserDTO> userDTOS = classroom.get().getClassUsers().stream()
-                    .map(ClassUser::getUser)
-                    .map(user -> mapper.map(user, UserDTO.class))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+            List<UserDTO> userDTOS = classroom.get().getClassUsers().stream().map(ClassUser::getUser).map(user -> mapper.map(user, UserDTO.class)).filter(Objects::nonNull).collect(Collectors.toList());
             BaseListResponse baseListResponse = new BaseListResponse();
             baseListResponse.setSuccess(true);
             baseListResponse.setResults(userDTOS, userDTOS.size());
@@ -250,10 +307,7 @@ public class ClassroomServiceIplm implements ClassroomService {
             baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_NOT_FOUND);
             return ResponseEntity.ok(baseResponseError);
         }
-        List<ClassroomDTO> classroomDTOS = user.getClassUsers().stream()
-                .map(ClassUser::getClassroom)
-                .map(classroom -> mapper.map(classroom, ClassroomDTO.class))
-                .collect(Collectors.toList());
+        List<ClassroomDTO> classroomDTOS = user.getClassUsers().stream().map(ClassUser::getClassroom).map(classroom -> mapper.map(classroom, ClassroomDTO.class)).collect(Collectors.toList());
         BaseListResponse baseListResponse = new BaseListResponse();
         baseListResponse.setSuccess(true);
         baseListResponse.setResults(classroomDTOS, classroomDTOS.size());
@@ -276,16 +330,7 @@ public class ClassroomServiceIplm implements ClassroomService {
             classUser.setUser(user1.get());
             classroom.get().setQuantityStudents(classroom.get().getQuantityStudents() + 1);
         } else {
-            User user = User.builder()
-                    .fullName(request.getFullName())
-                    .dob(request.getDob())
-                    .id(UUID.randomUUID().toString())
-                    .classname(request.getClassname())
-                    .userCode(request.getUserCode())
-                    .address(null)
-                    .phoneNumber(request.getPhoneNumber())
-                    .role(roleOptional.get())
-                    .password(passwordEncoder.encode(request.getPassword())).build();
+            User user = User.builder().fullName(request.getFullName()).dob(request.getDob()).id(UUID.randomUUID().toString()).classname(request.getClassname()).userCode(request.getUserCode()).address(null).phoneNumber(request.getPhoneNumber()).role(roleOptional.get()).password(passwordEncoder.encode(request.getPassword())).build();
             classUser.setUser(user);
             classroom.get().setQuantityStudents(classroom.get().getQuantityStudents() + 1);
         }
@@ -316,16 +361,9 @@ public class ClassroomServiceIplm implements ClassroomService {
 
         List<QRCode> qrCodes = qrCodeRepository.findAllByClassroomId(qrCodeOptional.get().getClassroomId());
         List<ObjectStatistic> objectStatistics = qrCodes.stream().flatMap(qrCode -> {
-            ObjectStatistic statistic1 = ObjectStatistic.builder()
-                    .idQr(qrCode.getId())
-                    .type("attended")
-                    .quantity(qrCode.getCheckins().size())
-                    .time(qrCode.getCreateAt()).build();
+            ObjectStatistic statistic1 = ObjectStatistic.builder().idQr(qrCode.getId()).type("attended").quantity(qrCode.getCheckins().size()).time(qrCode.getCreateAt()).build();
 
-            ObjectStatistic statistic2 = ObjectStatistic.builder().type("not-attended")
-                    .idQr(qrCode.getId())
-                    .quantity(classroom.get().getQuantityStudents() - qrCode.getCheckins().size())
-                    .time(qrCode.getCreateAt()).build();
+            ObjectStatistic statistic2 = ObjectStatistic.builder().type("not-attended").idQr(qrCode.getId()).quantity(classroom.get().getQuantityStudents() - qrCode.getCheckins().size()).time(qrCode.getCreateAt()).build();
             return Stream.of(statistic1, statistic2);
 
         }).sorted(Comparator.comparing(ObjectStatistic::getTime).reversed()).collect(Collectors.toList());
@@ -367,23 +405,14 @@ public class ClassroomServiceIplm implements ClassroomService {
             } else {
 
                 classUser.setUser(user1);
-                classroom.get().setQuantityStudents(classroom.get().getClassUsers().size()+1);
+                classroom.get().setQuantityStudents(classroom.get().getClassUsers().size() + 1);
             }
 
         } else {
-            User user = User.builder().id(UUID.randomUUID().toString())
-                    .fullName(request.getFullName())
-                    .dob(request.getDob())
-                    .classname(request.getClassname())
-                    .userCode(request.getUserCode())
-                    .address(request.getAddress())
-                    .phoneNumber(request.getPhoneNumber())
-                    .password(passwordEncoder.encode(request.getPassword()))
-                    .role(role.get()).build();
+            User user = User.builder().id(UUID.randomUUID().toString()).fullName(request.getFullName()).dob(request.getDob()).classname(request.getClassname()).userCode(request.getUserCode()).address(request.getAddress()).phoneNumber(request.getPhoneNumber()).password(passwordEncoder.encode(request.getPassword())).role(role.get()).build();
             userRepository.save(user);
             classUser.setUser(user);
-            classroom.get().setQuantityStudents(classroom.get().getClassUsers().size()+1);
-
+            classroom.get().setQuantityStudents(classroom.get().getClassUsers().size() + 1);
 
 
         }

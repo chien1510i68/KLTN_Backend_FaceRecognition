@@ -18,6 +18,8 @@ public interface ClassroomService {
     ResponseEntity<?> addUserByFileExcel(MultipartFile file , String id);
 
     ResponseEntity<?>  getAllClassroom () ;
+
+    ResponseEntity<?> getClassroomsByUserCode(String userCode) ;
     ResponseEntity<?> filterClassroom (FilterClassroomRequest request);
     ResponseEntity<?> getStudentInClassroom (String classroomId) ;
     ResponseEntity<?> deleteUserInClassroom (String userId , String classroomId);

@@ -19,66 +19,71 @@ public class ClassroomController {
     private final ClassroomService classroomService;
 
     @GetMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' , 'STUDENT')")
+    @PreAuthorize("hasAnyAuthority('ADMIN' , 'STUDENT' ,'LECTURER')")
     public ResponseEntity<?> getClassroomById(@PathVariable String id) {
         return classroomService.showClassroom(id);
     }
     @GetMapping("students/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN' ,'LECTURER')")
     public  ResponseEntity<?> getListUserInClassroom(@PathVariable String id){
         return classroomService.getStudentInClassroom(id);
     }
 
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> getAllClassroom() {
         return classroomService.getAllClassroom();
     }
+    @GetMapping("by-admin/{userCode}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
+    public ResponseEntity<?> getClassroomByUserCode(@PathVariable String userCode) {
+        return classroomService.getClassroomsByUserCode(userCode);
+    }
     @GetMapping("user/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' ,'STUDENT')")
+    @PreAuthorize("hasAnyAuthority('ADMIN' ,'STUDENT' , 'LECTURER')")
     public ResponseEntity<?> getClassroomsByUser(@PathVariable String id){
         return classroomService.getClassroomByUser(id);
     }
     @GetMapping("/statistic/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> statisticClassroom (@PathVariable String id){
         return classroomService.statisticQrByClassroom(id);
     }
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
-    public ResponseEntity<?> createClassroom(@RequestBody CreateClassroomRequest request) {
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
+    public ResponseEntity<?> createClassroom(@ModelAttribute CreateClassroomRequest request) {
         return classroomService.createClassroom(request);
     }
     @PostMapping("filter")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> filterClassroom(@RequestBody FilterClassroomRequest request) {
         return classroomService.filterClassroom(request);
     }
     @PostMapping("user")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> deleteUserInClassroom (@RequestBody DeleteUserInClassroomRequest request){
         return classroomService.deleteUserInClassroom(request.getUserId(), request.getClassroomId());
     }
     @PutMapping("user/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> addUserInClass(@RequestBody CreateUserRequest request , @PathVariable String id ){
 //        return ResponseEntity.ok(request.getPassword());
         return classroomService.addStudentInClassroom(request , id );
     }
 
     @PutMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> addUserByFileExcel(@RequestBody MultipartFile file, @PathVariable String id) {
         return classroomService.addUserByFileExcel(file, id);
     }
     @PutMapping("update")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> updateClassroom (@RequestBody UpdateClassroomRequest request){
         return classroomService.updateClassroom(request);
     }
     @DeleteMapping("{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN' )")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LECTURER')")
     public ResponseEntity<?> deleteClassroom(@PathVariable String id) {
         return classroomService.deleteClassroom(id);
     }

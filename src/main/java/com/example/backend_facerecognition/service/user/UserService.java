@@ -20,7 +20,9 @@ public interface UserService {
 
     ResponseEntity<?> getByIdUser(String id);
 
-    UserDTO createUser(CreateUserRequest request);
+    ResponseEntity<?> createLecturer(CreateUserRequest request);
+
+    ResponseEntity<?> getListLecturer();
 
 
     ResponseEntity<?> deleteByIdUser(String id);

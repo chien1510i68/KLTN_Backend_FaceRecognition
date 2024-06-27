@@ -94,12 +94,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserDTO createUser(CreateUserRequest request) {
-        try {
-            checkUserIsExistByName(request.getUserCode(), null);
+    public ResponseEntity<?> createLecturer(CreateUserRequest request) {
 
-
-            Optional<Role> roleOptional = roleRepository.findById("STUDENT");
+            Optional<User> user1 = userRepository.findByUserCode(request.getUserCode());
+            if (user1.isPresent()){
+                BaseResponseError baseResponseError = new BaseResponseError();
+                baseResponseError.setSuccess(false);
+                baseResponseError.setFailed(500 , Constants.ErrorMessageUserValidation.USER_HAVE_EXISTED);
+                return ResponseEntity.ok(baseResponseError);
+            }
+            Optional<Role> roleOptional = roleRepository.findById("LECTURER");
             User user = User.builder()
                     .fullName(request.getFullName())
                     .dob(request.getDob())
@@ -110,12 +114,24 @@ public class UserServiceImpl implements UserService {
                     .phoneNumber(request.getPhoneNumber())
                     .role(roleOptional.get())
                     .password(encoder.encode(request.getPassword())).build();
-            return modelMapper.map(userRepository.saveAndFlush(user), UserDTO.class);
-        } catch (Exception ex) {
-            throw new MyCustomException("Quá trình tạo người dùng không thành công ! " + ex.getMessage());
-        }
+            BaseItemResponse response = new BaseItemResponse();
+            response.setSuccess(true);
+            response.setData(modelMapper.map(userRepository.saveAndFlush(user), UserDTO.class));
+            return ResponseEntity.ok().body(response);
+
     }
 
+
+    @Override
+    public ResponseEntity<?> getListLecturer() {
+        List<UserDTO> userDTOS = userRepository.findAll().stream().filter(user -> user.getRole().getName().equals("LECTURER"))
+                .map(user -> mapper.map(user , UserDTO.class))
+                .collect(Collectors.toList());
+        BaseListResponse response = new BaseListResponse();
+        response.setSuccess(true);
+        response.setResults(userDTOS , userDTOS.size());
+         return ResponseEntity.ok(response);
+    }
 
     @Override
     @Transactional
@@ -127,6 +143,8 @@ public class UserServiceImpl implements UserService {
             errorResponse.setMessage((Constants.ErrorMessageUserValidation.USER_NOT_FOUND));
             return ResponseEntity.ok(errorResponse);
         } else {
+            List<Classroom> classrooms = userOptional.get().getClassrooms();
+            classroomRepository.deleteAll(classrooms);
             userRepository.deleteById(id);
             return ResponseEntity.ok(true);
         }
