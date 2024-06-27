@@ -4,6 +4,7 @@ import com.example.backend_facerecognition.common.ReadDataFromExcel;
 import com.example.backend_facerecognition.constant.Constants;
 import com.example.backend_facerecognition.constant.ErrorCodeDefs;
 import com.example.backend_facerecognition.dto.entity.UserDTO;
+import com.example.backend_facerecognition.dto.request.user_request.CreatePredictRequest;
 import com.example.backend_facerecognition.dto.request.user_request.CreateUserRequest;
 import com.example.backend_facerecognition.dto.request.user_request.FilterUserRequest;
 import com.example.backend_facerecognition.dto.request.user_request.UpdateUserRequest;
@@ -54,19 +55,18 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-
-
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final ClassroomRepository classroomRepository ;
+    private final ClassroomRepository classroomRepository;
     private final PasswordEncoder encoder;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
     private final UserUpdateMapper userUpdateMapper;
-    private final ModelMapper mapper ;
+    private final ModelMapper mapper;
+    private final FaceRecogClient faceRecogClient;
 
 
     @Override
@@ -96,28 +96,28 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public ResponseEntity<?> createLecturer(CreateUserRequest request) {
 
-            Optional<User> user1 = userRepository.findByUserCode(request.getUserCode());
-            if (user1.isPresent()){
-                BaseResponseError baseResponseError = new BaseResponseError();
-                baseResponseError.setSuccess(false);
-                baseResponseError.setFailed(500 , Constants.ErrorMessageUserValidation.USER_HAVE_EXISTED);
-                return ResponseEntity.ok(baseResponseError);
-            }
-            Optional<Role> roleOptional = roleRepository.findById("LECTURER");
-            User user = User.builder()
-                    .fullName(request.getFullName())
-                    .dob(request.getDob())
-                    .id(UUID.randomUUID().toString())
-                    .classname(request.getClassname())
-                    .userCode(request.getUserCode())
-                    .address(null)
-                    .phoneNumber(request.getPhoneNumber())
-                    .role(roleOptional.get())
-                    .password(encoder.encode(request.getPassword())).build();
-            BaseItemResponse response = new BaseItemResponse();
-            response.setSuccess(true);
-            response.setData(modelMapper.map(userRepository.saveAndFlush(user), UserDTO.class));
-            return ResponseEntity.ok().body(response);
+        Optional<User> user1 = userRepository.findByUserCode(request.getUserCode());
+        if (user1.isPresent()) {
+            BaseResponseError baseResponseError = new BaseResponseError();
+            baseResponseError.setSuccess(false);
+            baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_HAVE_EXISTED);
+            return ResponseEntity.ok(baseResponseError);
+        }
+        Optional<Role> roleOptional = roleRepository.findById("LECTURER");
+        User user = User.builder()
+                .fullName(request.getFullName())
+                .dob(request.getDob())
+                .id(UUID.randomUUID().toString())
+                .classname(request.getClassname())
+                .userCode(request.getUserCode())
+                .address(null)
+                .phoneNumber(request.getPhoneNumber())
+                .role(roleOptional.get())
+                .password(encoder.encode(request.getPassword())).build();
+        BaseItemResponse response = new BaseItemResponse();
+        response.setSuccess(true);
+        response.setData(modelMapper.map(userRepository.saveAndFlush(user), UserDTO.class));
+        return ResponseEntity.ok().body(response);
 
     }
 
@@ -125,12 +125,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseEntity<?> getListLecturer() {
         List<UserDTO> userDTOS = userRepository.findAll().stream().filter(user -> user.getRole().getName().equals("LECTURER"))
-                .map(user -> mapper.map(user , UserDTO.class))
+                .map(user -> mapper.map(user, UserDTO.class))
                 .collect(Collectors.toList());
         BaseListResponse response = new BaseListResponse();
         response.setSuccess(true);
-        response.setResults(userDTOS , userDTOS.size());
-         return ResponseEntity.ok(response);
+        response.setResults(userDTOS, userDTOS.size());
+        return ResponseEntity.ok(response);
     }
 
     @Override
@@ -249,28 +249,28 @@ public class UserServiceImpl implements UserService {
         Optional<User> user = userRepository.findById(request.getId());
         if (user.isEmpty()) {
             BaseResponseError baseResponseError = new BaseResponseError();
-            baseResponseError.setFailed(500 ,Constants.ErrorMessageUserValidation.USER_NOT_FOUND );
+            baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_NOT_FOUND);
             return ResponseEntity.ok(baseResponseError);
         }
         userUpdateMapper.updateUserFromDto(request, user.get());
         userRepository.save(user.get());
 //        user.get().setPassword(passwordEncoder.encode(request.getPassword()));
         BaseItemResponse response = new BaseItemResponse();
-        response.successData(modelMapper.map(user.get() , UserDTO.class));
+        response.successData(modelMapper.map(user.get(), UserDTO.class));
 
         return ResponseEntity.ok(response);
     }
 
     @Override
-    public ResponseEntity<?> getImagesByUser(String userCode)  {
+    public ResponseEntity<?> getImagesByUser(String userCode) {
         try {
             String json = "{\"user_code\" : \"" + userCode + "\" }";
 
-          Object responseObject = BaseServicePython.callData("http://localhost:8000/get_images/" ,json );
+            Object responseObject = BaseServicePython.callData("http://localhost:8000/get_images/", json);
             return ResponseEntity.ok(responseObject);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.ok( e.getMessage());
+            return ResponseEntity.ok(e.getMessage());
         }
 
 
@@ -322,7 +322,7 @@ public class UserServiceImpl implements UserService {
         String json = "{\"ids\": " + jsonUserCodes + "}";
         Object results = null;
         try {
-            results = BaseServicePython.callData("http://localhost:8000/training_users/" , json);
+            results = BaseServicePython.callData("http://localhost:8000/training_users/", json);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -332,10 +332,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseEntity<?> filterUser(FilterUserRequest request) {
         Specification<User> specification = CustomUserRepository.filterUser(request);
-        List<UserDTO> users = userRepository.findAll(specification).stream().map(user ->mapper.map(user , UserDTO.class)).collect(Collectors.toList());
+        List<UserDTO> users = userRepository.findAll(specification).stream().map(user -> mapper.map(user, UserDTO.class)).collect(Collectors.toList());
         BaseListResponse baseListResponse = new BaseListResponse();
         baseListResponse.setSuccess(true);
-        baseListResponse.setResults(users , users.size());
+        baseListResponse.setResults(users, users.size());
         return ResponseEntity.ok(baseListResponse);
     }
 
@@ -344,8 +344,8 @@ public class UserServiceImpl implements UserService {
         Optional<Classroom> classroom = classroomRepository.findById(classroomId);
         Specification<User> specification = CustomUserRepository.filterUser(request);
 
-        if(classroom.isEmpty()){
-            return ResponseEntity.ok("Khong ton tai classroom ") ;
+        if (classroom.isEmpty()) {
+            return ResponseEntity.ok("Khong ton tai classroom ");
         }
         List<User> users = classroom.get().getClassUsers().stream().map(ClassUser::getUser).collect(Collectors.toList());
 //        List<UserDTO> userDTOS = users(specification)
@@ -354,16 +354,39 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> updateImage(String fileName, MultipartFile file) throws IOException {
-        Object results = null ;
+        Object results = null;
         File file1 = FaceRecogClient.convertMultipartFileToFile(file);
 
         HttpEntity entity = MultipartEntityBuilder.create()
-                .addBinaryBody("image" , file1 , ContentType.APPLICATION_OCTET_STREAM , file.getName())
-                .addTextBody("file_name" , fileName).build();
-        results = BaseServicePython.getAPI("http://localhost:8000/replace_image/" , entity);
+                .addBinaryBody("image", file1, ContentType.APPLICATION_OCTET_STREAM, file.getName())
+                .addTextBody("file_name", fileName).build();
+        results = BaseServicePython.getAPI("http://localhost:8000/replace_image/", entity);
         BaseItemResponse response = new BaseItemResponse();
         response.setSuccess(true);
         response.setData(results);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<?> predictUser(CreatePredictRequest createPredictRequest) throws IOException {
+        Integer valuePredict = faceRecogClient.predictFace(createPredictRequest.getImage(), createPredictRequest.getUserCode());
+        BaseItemResponse response = new BaseItemResponse();
+        response.setSuccess(true);
+        response.setData(valuePredict);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<?> trainingModel(CreatePredictRequest createPredictRequest) {
+
+        BaseItemResponse response = new BaseItemResponse();
+        response.setSuccess(true);
+        try {
+            response.setData(faceRecogClient.trainingModel(createPredictRequest.getImage(), createPredictRequest.getUserCode()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return ResponseEntity.ok(response);
     }
 }

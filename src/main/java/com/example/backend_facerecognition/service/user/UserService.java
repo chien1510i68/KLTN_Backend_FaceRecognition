@@ -2,6 +2,7 @@ package com.example.backend_facerecognition.service.user;
 
 
 import com.example.backend_facerecognition.dto.entity.UserDTO;
+import com.example.backend_facerecognition.dto.request.user_request.CreatePredictRequest;
 import com.example.backend_facerecognition.dto.request.user_request.CreateUserRequest;
 import com.example.backend_facerecognition.dto.request.user_request.FilterUserRequest;
 import com.example.backend_facerecognition.dto.request.user_request.UpdateUserRequest;
@@ -42,6 +43,10 @@ public interface UserService {
     ResponseEntity<?> filterUser(FilterUserRequest request);
     ResponseEntity<?> filterUsers(FilterUserRequest request , String classroomId);
     ResponseEntity<?> updateImage(String fileName , MultipartFile file) throws IOException;
+
+    ResponseEntity<?> predictUser (CreatePredictRequest createPredictRequest) throws IOException;
+
+    ResponseEntity<?> trainingModel(CreatePredictRequest createPredictRequest);
 
 
 

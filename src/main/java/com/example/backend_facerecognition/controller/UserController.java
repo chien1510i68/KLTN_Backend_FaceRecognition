@@ -94,6 +94,17 @@ public class UserController {
         return  userService.updateImage(fileName,file);
     }
 
+    @PostMapping("prediction")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'LECTURER' )")
+    public ResponseEntity<?> predictUser(@ModelAttribute CreatePredictRequest createPredictRequest) throws IOException {
+       return  userService.predictUser(createPredictRequest);
+    }
+
+    @PostMapping("trainModel")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'LECTURER' )")
+    public ResponseEntity<?> trainingModel(@ModelAttribute CreatePredictRequest request){
+        return userService.trainingModel(request);
+    }
 
 
 

@@ -68,6 +68,40 @@ public class FaceRecogClient {
         return predictsValue;
     }
 
+    public String trainingModel(MultipartFile image_data ,String userCode) throws IOException {
+        String apiURL = "http://localhost:8000/detections/";
+//        String apiURL = "http://localhost:";
+        HttpClient httpClient = HttpClients.createDefault();
+        HttpPost httpPost = new HttpPost(apiURL);
+
+        // Tạo MultipartEntity để chứa dữ liệu hình ảnh và truyền vào request
+        File file = convertMultipartFileToFile(image_data);
+        HttpEntity entity = MultipartEntityBuilder.create()
+                .addBinaryBody("input_folder", file, ContentType.APPLICATION_OCTET_STREAM, file.getName())
+                .addTextBody("user_code",userCode )
+                .build();
+
+        httpPost.setEntity(entity);
+
+        // Gửi yêu cầu và nhận phản hồi
+        HttpResponse response = httpClient.execute(httpPost);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+        StringBuilder result = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            result.append(line);
+        }
+        // Cleanup: Delete the temporary file
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(result.toString());
+        // Lấy giá trị từ trường "predicts"
+        String message = rootNode.get("message").asText();
+        file.delete();
+
+        return message;
+    }
+
     public static File convertMultipartFileToFile(MultipartFile file) throws IOException {
         File convertedFile = new File(file.getOriginalFilename());
         try (var inputStream = file.getInputStream()) {
