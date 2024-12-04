@@ -59,7 +59,7 @@ public class CheckinsController {
     @PostMapping("user")
     @PreAuthorize("hasAnyAuthority('STUDENT' , 'ADMIN', 'LECTURER')")
     public ResponseEntity<?> getHistoryCheckinsByUser(@RequestBody FilterUserAndClassroomRequest request){
-        return checkinsService.getAttendedByUser(request.getClassroomId(), request.getUserCode());
+        return checkinsService.getAttendedByUser( request.getUserCode());
     }
     @GetMapping("attended_classroom/{qrCodeId}")
     @PreAuthorize("hasAnyAuthority('STUDENT' , 'ADMIN', 'LECTURER')")

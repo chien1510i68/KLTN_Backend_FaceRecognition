@@ -24,6 +24,12 @@ public class UserController {
     private final UserService userService ;
 
 
+    @GetMapping("userCode/{userCode}")
+    @PreAuthorize("hasAnyAuthority('ADMIN' ,'STUDENT', 'LECTURER')")
+    public ResponseEntity<?> getUserByUserCode(@PathVariable String userCode) throws IOException {
+        return userService.getUserByUserCode(userCode);
+    }
+
     @GetMapping("")
     @PreAuthorize("hasAnyAuthority('ADMIN' , 'LECTURER')")
     public ResponseEntity<?> getAllUser(){
@@ -47,7 +53,7 @@ public class UserController {
     }
 
     @PutMapping("")
-    @PreAuthorize("hasAnyAuthority('ADMIN' , 'LECTURER')")
+    @PreAuthorize("hasAnyAuthority('ADMIN' , 'LECTURER','STUDENT')")
     public ResponseEntity<?> updateUser (@RequestBody UpdateUserRequest request){
         return userService.updateUser(request);
     }

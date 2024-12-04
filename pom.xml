@@ -9,11 +9,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>Backend_FaceRecognition</artifactId>
+    <artifactId>Attendance</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>war</packaging>
-    <name>Backend_FaceRecognition</name>
-    <description>Backend_FaceRecognition</description>
+    <name>Attendance</name>
+    <description>Attendance</description>
     <properties>
         <java.version>17</java.version>
         <org.mapstruct.version>1.4.1.Final</org.mapstruct.version>
@@ -42,8 +42,9 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.16</version>
+            <version>8.0.31</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>

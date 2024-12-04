@@ -16,7 +16,7 @@ public interface CheckinsService {
 
     ResponseEntity<?> getCheckinsByClassroomAndUser(String userId , String classroomId);
 
-    ResponseEntity<?> getAttendedByUser(String classroomId , String userCode );
+    ResponseEntity<?> getAttendedByUser( String userCode );
     ResponseEntity<?> getAllCheckInByClassroomId(String qrCodeId);
 
 }

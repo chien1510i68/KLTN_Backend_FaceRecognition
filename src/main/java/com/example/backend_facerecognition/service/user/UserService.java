@@ -47,6 +47,7 @@ public interface UserService {
     ResponseEntity<?> predictUser (CreatePredictRequest createPredictRequest) throws IOException;
 
     ResponseEntity<?> trainingModel(CreatePredictRequest createPredictRequest);
+    ResponseEntity<?> getUserByUserCode(String userCode);
 
 
 

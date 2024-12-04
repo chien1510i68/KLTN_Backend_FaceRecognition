@@ -246,7 +246,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> updateUser(UpdateUserRequest request) {
-        Optional<User> user = userRepository.findById(request.getId());
+        Optional<User> user = userRepository.findByUserCode(request.getUserCode());
         if (user.isEmpty()) {
             BaseResponseError baseResponseError = new BaseResponseError();
             baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_NOT_FOUND);
@@ -254,7 +254,6 @@ public class UserServiceImpl implements UserService {
         }
         userUpdateMapper.updateUserFromDto(request, user.get());
         userRepository.save(user.get());
-//        user.get().setPassword(passwordEncoder.encode(request.getPassword()));
         BaseItemResponse response = new BaseItemResponse();
         response.successData(modelMapper.map(user.get(), UserDTO.class));
 
@@ -387,6 +386,21 @@ public class UserServiceImpl implements UserService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<?> getUserByUserCode(String userCode) {
+        Optional<User> user = userRepository.findByUserCode(userCode);
+        BaseItemResponse response = new BaseItemResponse<>();
+        if (user.isEmpty()) {
+            response.setSuccess(false);
+            response.setData("User not found");
+            return ResponseEntity.ok(response);
+        }
+        UserDTO userDTO = mapper.map(user.get(), UserDTO.class);
+        response.setSuccess(true);
+        response.setData(userDTO);
         return ResponseEntity.ok(response);
     }
 }

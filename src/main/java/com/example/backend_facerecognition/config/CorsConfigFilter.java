@@ -14,7 +14,7 @@ public class CorsConfigFilter implements Filter {
                          ServletResponse servletResponse,
                          FilterChain chain) throws IOException, ServletException {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Origin" ,"*");
         response.setHeader("Access-Control-Allow-Methods", "POST, PUT, GET, OPTIONS, DELETE");
         response.setHeader("Ngrok-Skip-Browser-Warning", "1");
         response.setHeader("Access-Control-Max-Age", "3600");

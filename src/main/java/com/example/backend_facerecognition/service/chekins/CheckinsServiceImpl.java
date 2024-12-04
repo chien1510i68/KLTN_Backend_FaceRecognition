@@ -12,10 +12,7 @@ import com.example.backend_facerecognition.dto.response.BaseListResponse;
 import com.example.backend_facerecognition.dto.response.BaseResponseError;
 import com.example.backend_facerecognition.dto.response.ErrorResponse;
 import com.example.backend_facerecognition.model.*;
-import com.example.backend_facerecognition.repository.CheckinsRepository;
-import com.example.backend_facerecognition.repository.ClassroomRepository;
-import com.example.backend_facerecognition.repository.QRCodeRepository;
-import com.example.backend_facerecognition.repository.UserRepository;
+import com.example.backend_facerecognition.repository.*;
 import com.example.backend_facerecognition.service.file.HandleImageService;
 import com.example.backend_facerecognition.service.mapper.CheckinsUpdateMapper;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +34,7 @@ public class CheckinsServiceImpl implements CheckinsService {
     private final ModelMapper mapper;
     private final UserRepository userRepository;
     private final HandleImageService handleImageService ;
+    private final ClassUserRepository classUserRepository;
 
     @Override
     public ResponseEntity<?> createCheckins(CreateCheckinsRequest createCheckinsRequest) {
@@ -148,49 +146,86 @@ public class CheckinsServiceImpl implements CheckinsService {
     }
 
     @Override
-    public ResponseEntity<?> getCheckinsByClassroomAndUser(String userId, String classroomId) {
-        List<CheckinDTO> checkins = checkinsRepository.findAllByUserCodeAndClassroomId(userId, classroomId)
-                .stream().map(item -> mapper.map(item, CheckinDTO.class)).collect(Collectors.toList());
+    public ResponseEntity<?> getCheckinsByClassroomAndUser(String userCode, String classroomId) {
+//        List<CheckinUserDTO> checkins = checkinsRepository.findAllByUserCodeAndClassroomId(userId, classroomId)
+//                .stream().map(item -> mapper.map(item, CheckinDTO.class)).collect(Collectors.toList());
+
+        Optional<User> user = userRepository.findByUserCode(userCode);
+        Optional<Classroom> classroom = classroomRepository.findById(classroomId);
+        if (user.isEmpty() || classroom.isEmpty()) {
+            BaseResponseError baseResponseError = new BaseResponseError();
+            baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_NOT_FOUND);
+            return ResponseEntity.ok(baseResponseError);
+        }
+        List<Classroom> classrooms = classUserRepository.findAllByUserAndClassroom(user.get() , classroom.get()).stream()
+                .map(ClassUser::getClassroom).collect(Collectors.toList());
+        List<   AttendedUserDTO> attendedUserDTOList = classrooms.stream().map(classroom1 -> {
+            List<QRCode> qrCodes = qrCodeRepository.findAllByClassroomId(classroom1.getId());
+            List<CheckinUserDTO> checkinUserDTOS = qrCodes.stream().sorted(Comparator.comparing(QRCode::getCreateAt)).map(qrCode -> {
+                CheckinUserDTO checkinUserDTO = new CheckinUserDTO();
+                boolean attended = qrCode.getCheckins().stream().anyMatch(checkin -> {
+                    boolean isAttended = checkin.getUserCode().equals(userCode);
+                    checkinUserDTO.setAttended(isAttended);
+                    checkinUserDTO.setTimeAttended(isAttended ? checkin.getTime() : null);
+
+                    return isAttended;
+                });
+                checkinUserDTO.setTimeCreateQr(qrCode.getCreateAt());
+                return checkinUserDTO;
+
+
+            }).collect(Collectors.toList());
+            return AttendedUserDTO.builder().userName(user.get().getFullName())
+                    .userCode(user.get().getUserCode())
+                    .classCode(classroom1.getClassCode())
+                    .nameClass(classroom1.getNameClass())
+                    .studyGroup(classroom1.getStudyGroup())
+                    .checkinUserDTOS(checkinUserDTOS).build();
+        }).toList();
         BaseListResponse response = new BaseListResponse();
         response.setSuccess(true);
-        response.setResults(checkins, checkins.size());
+        response.setResults(attendedUserDTOList, attendedUserDTOList.size());
         return ResponseEntity.ok(response);
+
     }
 
     @Override
-    public ResponseEntity<?> getAttendedByUser(String classroomId, String userCode) {
-        Optional<Classroom> classroomOptional = classroomRepository.findById(classroomId);
-        if (classroomOptional.isEmpty()) {
-            BaseResponseError baseResponseError = new BaseResponseError();
-            baseResponseError.setFailed(500, Constants.ErrorMessageClassroomValidation.CLASSROOM_NOT_FOUND);
-            return ResponseEntity.ok(baseResponseError);
-        }
-        Optional<User> user = classroomOptional.get().getClassUsers().stream().map(ClassUser::getUser).filter(user1 -> user1.getUserCode().equals(userCode)).findFirst();
+    public ResponseEntity<?> getAttendedByUser( String userCode) {
 
+       Optional<User> user = userRepository.findByUserCode(userCode);
         if (user.isEmpty()) {
             BaseResponseError baseResponseError = new BaseResponseError();
             baseResponseError.setFailed(500, Constants.ErrorMessageUserValidation.USER_NOT_FOUND);
             return ResponseEntity.ok(baseResponseError);
         }
+        List<ClassUser> classUsers = classUserRepository.findAllByUser(user.get());
+        List<Classroom> classrooms = classUsers.stream().map(ClassUser::getClassroom).toList();
+        List<   AttendedUserDTO> attendedUserDTOList = classrooms.stream().map(classroom -> {
+            List<QRCode> qrCodes = qrCodeRepository.findAllByClassroomId(classroom.getId());
+            List<CheckinUserDTO> checkinUserDTOS = qrCodes.stream().sorted(Comparator.comparing(QRCode::getCreateAt)).map(qrCode -> {
+                CheckinUserDTO checkinUserDTO = new CheckinUserDTO();
+                boolean attended = qrCode.getCheckins().stream().anyMatch(checkin -> {
+                    boolean isAttended = checkin.getUserCode().equals(userCode);
+                    checkinUserDTO.setAttended(isAttended);
+                    checkinUserDTO.setTimeAttended(isAttended ? checkin.getTime() : null);
 
-        List<QRCode> qrCodes = qrCodeRepository.findAllByClassroomId(classroomId);
-        List<CheckinUserDTO> checkinUserDTOS = qrCodes.stream().sorted(Comparator.comparing(QRCode::getCreateAt)).map(qrCode -> {
-            CheckinUserDTO checkinUserDTO = new CheckinUserDTO();
-            boolean attended = qrCode.getCheckins().stream().anyMatch(checkin -> {
-                boolean isAttended = checkin.getUserCode().equals(userCode);
-                checkinUserDTO.setAttended(isAttended);
-                checkinUserDTO.setTimeAttended(isAttended ? checkin.getTime() : null);
-
-                return isAttended;
-            });
-            checkinUserDTO.setTimeCreateQr(qrCode.getCreateAt());
-            return checkinUserDTO;
+                    return isAttended;
+                });
+                checkinUserDTO.setTimeCreateQr(qrCode.getCreateAt());
+                return checkinUserDTO;
 
 
-        }).collect(Collectors.toList());
-        BaseListResponse response = new BaseListResponse();
+            }).collect(Collectors.toList());
+            return AttendedUserDTO.builder().userName(user.get().getFullName())
+                    .userCode(user.get().getUserCode())
+                    .classCode(classroom.getClassCode())
+                    .nameClass(classroom.getNameClass())
+                    .studyGroup(classroom.getStudyGroup())
+                    .checkinUserDTOS(checkinUserDTOS).build();
+        }).toList();
+         BaseListResponse response = new BaseListResponse();
         response.setSuccess(true);
-        response.setResults(checkinUserDTOS, checkinUserDTOS.size());
+        response.setResults(attendedUserDTOList, attendedUserDTOList.size());
         return ResponseEntity.ok(response);
     }
 
@@ -228,8 +263,8 @@ public class CheckinsServiceImpl implements CheckinsService {
 
             userDTO.setUserCode(user.getUserCode());
             userDTO.setUserName(user.getFullName());
-            userDTO.setClassroom(user.getClassname());
-            userDTO.setDob(user.getDob());
+            userDTO.setNameClass(user.getClassname());
+//            userDTO.setDob(user.getDob());
             List<CheckinUserDTO> checkinUserDTOS = qrCodes.stream().map(qrCode -> {
                 CheckinUserDTO checkinUserDTO = new CheckinUserDTO();
                 boolean attended = qrCode.getCheckins().stream().anyMatch(checkin -> {
